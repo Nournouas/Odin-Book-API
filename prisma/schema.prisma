@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String          @unique @db.VarChar(500)
+  name          String
+  password      String          
+  bio           String?          
+  posts         Post[]
+  comments      Comment[]
+  followedBy    Follows[]       @relation("followedBy")
+  following     Follows[]       @relation("following")
+}
+
+model Follows {
+  followedBy    User            @relation("followedBy", fields: [followedById], references: [id], onDelete: Cascade)
+  followedById  Int
+  following     User            @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId   Int
+
+  assignedAt    DateTime        @default(now())
+  @@id([followingId, followedById])
+  @@index([followedById])
+}
+
+model Post {
+  id            Int             @id @default(autoincrement())
+  title         String          @db.VarChar(100)
+  body          String          @db.VarChar(5000)
+  createdAt     DateTime        @default(now())
+  authorId      Int
+  author        User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  @@index([authorId])
+}
+
+model Comment {
+  id            Int             @id @default(autoincrement())
+  body          String          @db.VarChar(500)
+  createdAt     DateTime        @default(now())
+  authorId      Int
+  postId        Int
+  post          Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  @@index([postId])
+  @@index([authorId])
+}
