@@ -6,6 +6,7 @@ const authRouter = require("./routes/auth");
 const passport = require("passport");
 const userRouter = require("./routes/user");
 const postRouter = require("./routes/post");
+const commentRouter = require("./routes/comment");
 //require("dotenv").config();
 
 // Middleware to parse URL-encoded form data
@@ -20,7 +21,7 @@ app.use(passport.initialize());
 app.use("/auth", authRouter);
 app.use("/user", userRouter);
 app.use("/post", postRouter);
-
+app.use("/comment", commentRouter);
 
 
 // default error handler

@@ -13,7 +13,7 @@ const getUser = async (req, res) => {
   try{
     const user = await findUser(req.params.id);
     if (!user) return res.status(404).json("User Does Not Exist")
-    res.status(201).json({user: user});
+    res.status(200).json({user: user});
   }catch(err){
     console.error(err);
     res.status(500).json("Something went wrong");

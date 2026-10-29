@@ -1,4 +1,4 @@
-const { createNewPost, getPostByID, updatePost} = require("../helpers/postQueries");
+const { createNewPost, getPostByID, updatePost, getAllPosts, deletePostByID} = require("../helpers/postQueries");
 
 
 const createPost = async (req, res) => {
@@ -21,7 +21,30 @@ const editPost = async (req, res) => {
   }
 }
 
+const getPost = async (req, res) => {
+  const post = await getPostByID(req.params.id);
+  if (!post) return res.status(404).json("post does not exist");
+  res.status(200).json({post: post});
+}
+
+const getPosts = async (req, res) => {
+  const posts = await getAllPosts();
+  if (!posts) return res.status(404).json("Can't find any posts")
+  res.status(200).json({posts: posts})
+}
+
+const deletePost = async (req, res) => {
+  const post = await getPostByID(req.params.id);
+  if (!post) return res.status(404).json("post does not exist");
+  await deletePostByID(req.params.id);
+  res.status(200).json("post deleted successfully")
+}
+
+
 module.exports = {
   createPost,
-  editPost
+  editPost,
+  getPost,
+  getPosts,
+  deletePost
 }

@@ -20,19 +20,19 @@ model User {
   bio           String?          
   posts         Post[]
   comments      Comment[]
-  followedBy    Follows[]       @relation("followedBy")
+  followed    Follows[]       @relation("followed")
   following     Follows[]       @relation("following")
 }
 
 model Follows {
-  followedBy    User            @relation("followedBy", fields: [followedById], references: [id], onDelete: Cascade)
-  followedById  Int
+  followed    User            @relation("followed", fields: [followedId], references: [id], onDelete: Cascade)
+  followedId  Int
   following     User            @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
   followingId   Int
 
   assignedAt    DateTime        @default(now())
-  @@id([followingId, followedById])
-  @@index([followedById])
+  @@id([followingId, followedId])
+  @@index([followedId])
 }
 
 model Post {

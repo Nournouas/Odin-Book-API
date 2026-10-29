@@ -105,7 +105,7 @@ describe("GET /user" , () => {
     expect(res.body.user).toHaveProperty("bio")
     expect(res.body.user).toHaveProperty("posts")
     expect(res.body.user).toHaveProperty("comments")
-    expect(res.body.user).toHaveProperty("followedBy")
+    expect(res.body.user).toHaveProperty("followed")
     expect(res.body.user).toHaveProperty("following")
     expect(res.body.user).not.toHaveProperty("password")
     expect(res.body.user).not.toHaveProperty("email")
@@ -172,7 +172,7 @@ describe("GET /user/all" , () => {
     expect(res.body.users[0]).toHaveProperty("bio")
     expect(res.body.users[0]).toHaveProperty("posts")
     expect(res.body.users[0]).toHaveProperty("comments")
-    expect(res.body.users[0]).toHaveProperty("followedBy")
+    expect(res.body.users[0]).toHaveProperty("followed")
     expect(res.body.users[0]).toHaveProperty("following")
     expect(res.body.users[0]).not.toHaveProperty("password")
     expect(res.body.users[0]).not.toHaveProperty("email")
@@ -182,7 +182,7 @@ describe("GET /user/all" , () => {
     expect(res.body.users[1]).toHaveProperty("bio")
     expect(res.body.users[1]).toHaveProperty("posts")
     expect(res.body.users[1]).toHaveProperty("comments")
-    expect(res.body.users[1]).toHaveProperty("followedBy")
+    expect(res.body.users[1]).toHaveProperty("followed")
     expect(res.body.users[1]).toHaveProperty("following")
     expect(res.body.users[1]).not.toHaveProperty("password")
     expect(res.body.users[1]).not.toHaveProperty("email")
@@ -332,9 +332,108 @@ describe("PUT /user/:id/follow" , () => {
     const res4 = await request(app)
       .get(`/user/${id}`)
       .set("Authorization", `Bearer ${token}`)
+    console.log(res4.body.user.following)
     expect(res4.status).toBe(201);
     expect(res4.body.user.following).toHaveLength(1)
     
   });
   
+})
+
+describe.only("POSTS - GET /user/:id"  , () => {
+  // details
+  const password = "123456789";
+  const email = "test@gmail.com"
+  const name =  "test-user"
+  const password2 = "123456789";
+  const email2 = "test2@gmail.com"
+  const name2 =  "test-user2"
+  let id;
+  let id2;
+  let token;
+  let token2;
+  let postId;
+  let postId2;
+  let commentId;
+  let commentId2;
+
+  //creates a user and post in the db before each
+  beforeEach(async () => {
+    //creates users
+    const hashed = await bcrypt.hash(password, 10);
+    const hashed2 = await bcrypt.hash(password2, 10);
+    const user = await createUser(email, name, hashed);
+    const user2 = await createUser(email2, name2, hashed2);
+    id = user.id;
+    id2 = user2.id;
+    const res1 = await request(app)
+      .post("/auth/login")
+      .send({email: "test@gmail.com", password: "123456789", name: "test"});
+    token = res1.body.token
+    const res12 = await request(app)
+      .post("/auth/login")
+      .send({email: "test2@gmail.com", password: "123456789", name: "test-user2"});
+    token2 = res12.body.token
+    //creates a post
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post", body: "new post body"})
+      .set("Authorization", `Bearer ${token}`)
+    const res2 = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    postId = res2.body.user.posts[0].id
+
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post2", body: "new post body2"})
+      .set("Authorization", `Bearer ${token2}`)
+    const res22 = await request(app)
+      .get(`/user/${id2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    postId2 = res22.body.user.posts[0].id
+
+    //creates a comment
+    const res3 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId, body: "comment"})
+      .set("Authorization", `Bearer ${token}`)
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .get(`/post/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res4.status).toBe(200)
+
+    commentId = res4.body.post.comments[0].id
+
+    const res32 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId2, body: "comment2"})
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res32.status).toBe(201);
+
+    const res42 = await request(app)
+      .get(`/post/${postId2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res42.status).toBe(200)
+
+    commentId2 = res42.body.post.comments[0].id
+  }) 
+
+  // TESTS ---------------
+
+  it ("gets a posts object", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    console.log(res.body.user);
+    expect(res.status).toBe(200);
+  });
+
 })

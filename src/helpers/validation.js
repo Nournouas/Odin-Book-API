@@ -6,7 +6,16 @@ const registerSignupValidator = [
   body("name").escape().isLength({min:3, max: 32}).withMessage("password must be between 3 and 32 characters long"),
 ]
 
-const validateSignup = (req, res, next) => {
+const createPostValidator = [
+  body("title").escape().isLength({min: 1, max: 128}).withMessage("Invalid email"),
+  body("body").isLength({min: 1 , max: 16000}).withMessage("password must be between 8 and 32 characters long"),
+]
+
+const createCommentValidator = [
+  body("body").isLength({min: 1 , max: 1200}).withMessage("password must be between 8 and 32 characters long"),
+]
+
+const validate = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
@@ -19,5 +28,7 @@ const validateSignup = (req, res, next) => {
 
 module.exports = {
   registerSignupValidator,
-  validateSignup
+  validate,
+  createCommentValidator,
+  createPostValidator
 }

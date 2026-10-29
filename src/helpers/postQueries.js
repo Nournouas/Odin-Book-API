@@ -14,7 +14,11 @@ const createNewPost = async (title, body, userID) => {
 
 const getPostByID = async (id) => {
   const post = await prisma.post.findUnique({
-    where: {id: parseInt(id)}
+    where: {id: parseInt(id)},
+    include: {
+      author: true,
+      comments: true,
+    }
   })
   return post;
 }
@@ -29,8 +33,26 @@ const updatePost = async (postID, title, body) => {
   })
 }
 
+const getAllPosts = async () => {
+  const posts = await prisma.post.findMany({
+    include: {
+      author: true,
+      comments: true,
+    }
+  })
+  return posts;
+}
+
+const deletePostByID = async (postID) => {
+  await prisma.post.delete({
+    where: {id: parseInt(postID)}
+  })
+}
+
 module.exports = {
   createNewPost,
   getPostByID,
-  updatePost
+  updatePost,
+  getAllPosts,
+  deletePostByID
 }

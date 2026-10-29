@@ -1,6 +1,7 @@
 const { Prisma } = require("@prisma/client/extension");
 const { prisma } = require("../../lib/prisma")
 
+// AUTH ROUTE
 const createUser = async (email, name, password) => {
   const user = await prisma.user.create({
     data: {
@@ -14,7 +15,7 @@ const createUser = async (email, name, password) => {
 
 const findUserByEmail = async (email) => {
   const existingUser = await prisma.user.findUnique({
-    where: {email}
+    where: {email},
   })
   return existingUser;
 }
@@ -26,6 +27,7 @@ const findUserByID = async (id) => {
   return existingUser;
 }
 
+// USER ROUTE
 const updateUserById = async(id, name, bio) => {
   await prisma.user.update({
     where: {
@@ -48,7 +50,7 @@ const findUser = async (id) => {
     include: {
       posts: true,
       comments: true,
-      followedBy: true,
+      followed: true,
       following: true,
     }
   })
@@ -65,7 +67,7 @@ const findUsers = async() => {
     include: {
       posts: true,
       comments: true,
-      followedBy: true,
+      followed: true,
       following: true,
     }
   })
@@ -84,7 +86,7 @@ const userFollow = async (userID, otherID) => {
     data: {
       following: {
         create: {
-          followedById: parseInt(otherID),
+          followedId: parseInt(otherID),
         }
       }
     }
@@ -94,8 +96,8 @@ const userFollow = async (userID, otherID) => {
 const existingFollow = async (userID, otherID) => {
   const existing = await prisma.follows.findUnique({
     where: {
-      followingId_followedById: {
-        followedById: parseInt(otherID),
+      followingId_followedId: {
+        followedId: parseInt(otherID),
         followingId: parseInt(userID)
       }
     }
