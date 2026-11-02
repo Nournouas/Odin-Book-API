@@ -340,7 +340,7 @@ describe("PUT /user/:id/follow" , () => {
   
 })
 
-describe.only("POSTS - GET /user/:id"  , () => {
+describe("POSTS - GET /user/:id"  , () => {
   // details
   const password = "123456789";
   const email = "test@gmail.com"
@@ -437,3 +437,616 @@ describe.only("POSTS - GET /user/:id"  , () => {
   });
 
 })
+
+describe("GET /user/:id/followers"  , () => {
+  // details
+  const password = "123456789";
+  const email = "test@gmail.com"
+  const name =  "test-user"
+  const password2 = "123456789";
+  const email2 = "test2@gmail.com"
+  const name2 =  "test-user2"
+  let id;
+  let id2;
+  let token;
+  let token2;
+  let postId;
+  let postId2;
+  let commentId;
+  let commentId2;
+
+  //creates a user and post in the db before each
+  beforeEach(async () => {
+    //creates users
+    const hashed = await bcrypt.hash(password, 10);
+    const hashed2 = await bcrypt.hash(password2, 10);
+    const user = await createUser(email, name, hashed);
+    const user2 = await createUser(email2, name2, hashed2);
+    id = user.id;
+    id2 = user2.id;
+    const res1 = await request(app)
+      .post("/auth/login")
+      .send({email: "test@gmail.com", password: "123456789", name: "test"});
+    token = res1.body.token
+    const res12 = await request(app)
+      .post("/auth/login")
+      .send({email: "test2@gmail.com", password: "123456789", name: "test-user2"});
+    token2 = res12.body.token
+    //creates a post
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post", body: "new post body"})
+      .set("Authorization", `Bearer ${token}`)
+    const res2 = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    postId = res2.body.user.posts[0].id
+
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post2", body: "new post body2"})
+      .set("Authorization", `Bearer ${token2}`)
+    const res22 = await request(app)
+      .get(`/user/${id2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    postId2 = res22.body.user.posts[0].id
+
+    //creates a comment
+    const res3 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId, body: "comment"})
+      .set("Authorization", `Bearer ${token}`)
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .get(`/post/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res4.status).toBe(200)
+
+    commentId = res4.body.post.comments[0].id
+
+    const res32 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId2, body: "comment2"})
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res32.status).toBe(201);
+
+    const res42 = await request(app)
+      .get(`/post/${postId2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res42.status).toBe(200)
+
+    commentId2 = res42.body.post.comments[0].id
+  }) 
+
+  // TESTS ---------------
+
+  it ("gets a 200 when authorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res.status).toBe(200);
+  });
+
+  it ("gets a 401 when unauthorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/user/${id2}/followers`)
+    expect(res.status).toBe(401);
+  });
+
+  it ("gets a 404 when user doesnt exist", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/user/321321321/followers`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(404);
+  });
+
+  it ("gets a list of followers", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const res = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res.status).toBe(200);
+    expect(res.body.followers).toHaveLength(1)
+    expect(res.body.followers[0].id).toBe(id)
+    expect(res.body.followers[0].name).toBe("test-user")
+    expect(res.body.followers[0].bio).toBeNull();
+  });
+
+})
+
+describe("PUT /user/:id/unfollow"  , () => {
+  // details
+  const password = "123456789";
+  const email = "test@gmail.com"
+  const name =  "test-user"
+  const password2 = "123456789";
+  const email2 = "test2@gmail.com"
+  const name2 =  "test-user2"
+  let id;
+  let id2;
+  let token;
+  let token2;
+  let postId;
+  let postId2;
+  let commentId;
+  let commentId2;
+
+  //creates a user and post in the db before each
+  beforeEach(async () => {
+    //creates users
+    const hashed = await bcrypt.hash(password, 10);
+    const hashed2 = await bcrypt.hash(password2, 10);
+    const user = await createUser(email, name, hashed);
+    const user2 = await createUser(email2, name2, hashed2);
+    id = user.id;
+    id2 = user2.id;
+    const res1 = await request(app)
+      .post("/auth/login")
+      .send({email: "test@gmail.com", password: "123456789", name: "test"});
+    token = res1.body.token
+    const res12 = await request(app)
+      .post("/auth/login")
+      .send({email: "test2@gmail.com", password: "123456789", name: "test-user2"});
+    token2 = res12.body.token
+    //creates a post
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post", body: "new post body"})
+      .set("Authorization", `Bearer ${token}`)
+    const res2 = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    postId = res2.body.user.posts[0].id
+
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post2", body: "new post body2"})
+      .set("Authorization", `Bearer ${token2}`)
+    const res22 = await request(app)
+      .get(`/user/${id2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    postId2 = res22.body.user.posts[0].id
+
+    //creates a comment
+    const res3 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId, body: "comment"})
+      .set("Authorization", `Bearer ${token}`)
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .get(`/post/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res4.status).toBe(200)
+
+    commentId = res4.body.post.comments[0].id
+
+    const res32 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId2, body: "comment2"})
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res32.status).toBe(201);
+
+    const res42 = await request(app)
+      .get(`/post/${postId2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res42.status).toBe(200)
+
+    commentId2 = res42.body.post.comments[0].id
+  }) 
+
+  // TESTS ---------------
+
+  it ("gets a 201 when authorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/${id2}/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(200);
+  });
+
+  it ("gets a 401 when unauthorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/${id2}/unfollow`)
+    expect(res.status).toBe(401);
+  });
+
+  it ("gets a 404 when user doesnt exist", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/473824732/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(404);
+  });
+
+  it ("gets a 400 when attempting to unfollow yourself", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/${id}/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(400);
+  });
+
+  it ("cant unfollow if you arent already following", async () => {
+    const res = await request(app)
+      .put(`/user/${id2}/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(400);
+  });
+
+
+  it ("gets a 400 when attempting to unfollow yourself", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/${id2}/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(200);
+
+    const resFollowers2 = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers2.status).toBe(200);
+    expect(resFollowers2.body.followers).toHaveLength(0)
+  });
+
+
+})
+
+describe("GET /user/:id/followers"  , () => {
+  // details
+  const password = "123456789";
+  const email = "test@gmail.com"
+  const name =  "test-user"
+  const password2 = "123456789";
+  const email2 = "test2@gmail.com"
+  const name2 =  "test-user2"
+  let id;
+  let id2;
+  let token;
+  let token2;
+  let postId;
+  let postId2;
+  let commentId;
+  let commentId2;
+
+  //creates a user and post in the db before each
+  beforeEach(async () => {
+    //creates users
+    const hashed = await bcrypt.hash(password, 10);
+    const hashed2 = await bcrypt.hash(password2, 10);
+    const user = await createUser(email, name, hashed);
+    const user2 = await createUser(email2, name2, hashed2);
+    id = user.id;
+    id2 = user2.id;
+    const res1 = await request(app)
+      .post("/auth/login")
+      .send({email: "test@gmail.com", password: "123456789", name: "test"});
+    token = res1.body.token
+    const res12 = await request(app)
+      .post("/auth/login")
+      .send({email: "test2@gmail.com", password: "123456789", name: "test-user2"});
+    token2 = res12.body.token
+    //creates a post
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post", body: "new post body"})
+      .set("Authorization", `Bearer ${token}`)
+    const res2 = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    postId = res2.body.user.posts[0].id
+
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post2", body: "new post body2"})
+      .set("Authorization", `Bearer ${token2}`)
+    const res22 = await request(app)
+      .get(`/user/${id2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    postId2 = res22.body.user.posts[0].id
+
+    //creates a comment
+    const res3 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId, body: "comment"})
+      .set("Authorization", `Bearer ${token}`)
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .get(`/post/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res4.status).toBe(200)
+
+    commentId = res4.body.post.comments[0].id
+
+    const res32 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId2, body: "comment2"})
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res32.status).toBe(201);
+
+    const res42 = await request(app)
+      .get(`/post/${postId2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res42.status).toBe(200)
+
+    commentId2 = res42.body.post.comments[0].id
+  }) 
+
+  // TESTS ---------------
+
+  it ("gets a 200 when authorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(200);
+    expect(resFollowers.body.followers).toHaveLength(1)
+    expect(resFollowers.body.followers[0].id).toBe(id)
+    expect(resFollowers.body.followers[0].name).toBe("test-user")
+    expect(resFollowers.body.followers[0].bio).toBeNull();
+
+    const res = await request(app)
+      .put(`/user/${id2}/unfollow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res.status).toBe(200);
+  });
+
+  it ("gets a 401 when unauthorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/${id2}/followers`)
+    expect(resFollowers.status).toBe(401);
+
+  });
+
+  it ("gets a 404 when user doesnt exist", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowers = await request(app)
+      .get(`/user/45345345/followers`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(resFollowers.status).toBe(404);
+
+  });
+
+})
+
+describe.only("GET /user/:id/followings"  , () => {
+  // details
+  const password = "123456789";
+  const email = "test@gmail.com"
+  const name =  "test-user"
+  const password2 = "123456789";
+  const email2 = "test2@gmail.com"
+  const name2 =  "test-user2"
+  let id;
+  let id2;
+  let token;
+  let token2;
+  let postId;
+  let postId2;
+  let commentId;
+  let commentId2;
+
+  //creates a user and post in the db before each
+  beforeEach(async () => {
+    //creates users
+    const hashed = await bcrypt.hash(password, 10);
+    const hashed2 = await bcrypt.hash(password2, 10);
+    const user = await createUser(email, name, hashed);
+    const user2 = await createUser(email2, name2, hashed2);
+    id = user.id;
+    id2 = user2.id;
+    const res1 = await request(app)
+      .post("/auth/login")
+      .send({email: "test@gmail.com", password: "123456789", name: "test"});
+    token = res1.body.token
+    const res12 = await request(app)
+      .post("/auth/login")
+      .send({email: "test2@gmail.com", password: "123456789", name: "test-user2"});
+    token2 = res12.body.token
+    //creates a post
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post", body: "new post body"})
+      .set("Authorization", `Bearer ${token}`)
+    const res2 = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
+    postId = res2.body.user.posts[0].id
+
+    await request(app)
+      .post(`/post`)
+      .send({title: "new post2", body: "new post body2"})
+      .set("Authorization", `Bearer ${token2}`)
+    const res22 = await request(app)
+      .get(`/user/${id2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    postId2 = res22.body.user.posts[0].id
+
+    //creates a comment
+    const res3 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId, body: "comment"})
+      .set("Authorization", `Bearer ${token}`)
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .get(`/post/${postId}`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res4.status).toBe(200)
+
+    commentId = res4.body.post.comments[0].id
+
+    const res32 = await request(app)
+      .post(`/comment`)
+      .send({postID: postId2, body: "comment2"})
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res32.status).toBe(201);
+
+    const res42 = await request(app)
+      .get(`/post/${postId2}`)
+      .set("Authorization", `Bearer ${token2}`)
+    expect(res42.status).toBe(200)
+
+    commentId2 = res42.body.post.comments[0].id
+  }) 
+
+  // TESTS ---------------
+
+  it ("gets a 201 when authorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowing = await request(app)
+      .get(`/user/${id}/following`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(resFollowing.status).toBe(200);
+  });
+
+
+  it ("gets a 401 when unauthorised", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowing = await request(app)
+      .get(`/user/${id}/following`)
+    expect(resFollowing.status).toBe(401);
+  });
+
+  it ("gets a 404 when user doesnt exist", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowing = await request(app)
+      .get(`/user/321432/following`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(resFollowing.status).toBe(404);
+  });
+
+  it ("gets a list of followed users", async () => {
+    const res2 = await request(app)
+      .put(`/user/${id2}/follow`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(res2.status).toBe(201);
+
+    const resFollowing = await request(app)
+      .get(`/user/${id}/following`)
+      .set("Authorization", `Bearer ${token}`)
+    expect(resFollowing.status).toBe(200);
+    console.log(resFollowing.body.following[0])
+    expect(resFollowing.body.following).toHaveLength(1)
+    expect(resFollowing.body.following[0].id).toBe(id2)
+    expect(resFollowing.body.following[0].name).toBe("test-user2")
+    expect(resFollowing.body.following[0].bio).toBeNull();
+    expect(resFollowing.body.following[0].posts).toBeDefined();
+  });
+})
+
+/*
+
+  */

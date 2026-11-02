@@ -50,8 +50,6 @@ const findUser = async (id) => {
     include: {
       posts: true,
       comments: true,
-      followed: true,
-      following: true,
     }
   })
 
@@ -93,6 +91,17 @@ const userFollow = async (userID, otherID) => {
   })
 }
 
+const userUnfollow = async (userID, otherID) => {
+  await prisma.follows.delete({
+    where: {
+      followingId_followedId: {
+        followingId: parseInt(userID),
+        followedId: parseInt(otherID),
+      },
+    },
+  });
+}
+
 const existingFollow = async (userID, otherID) => {
   const existing = await prisma.follows.findUnique({
     where: {
@@ -105,6 +114,22 @@ const existingFollow = async (userID, otherID) => {
   return existing;
 }
 
+const findFollowers = async (id) => {
+  const followers = await prisma.user.findMany({
+    where: {following: {some: {followedId: parseInt(id)}}},
+    select: {id: true, name: true, bio: true}
+  })
+  return followers;
+}
+
+const findFollowing = async (id) => {
+  const following = await prisma.user.findMany({
+    where: {followed: {some: {followingId: parseInt(id)}}},
+    select: {id: true, name: true, bio: true, posts: true}
+  })
+  return following;
+}
+
 
 module.exports = {
   createUser,
@@ -115,5 +140,8 @@ module.exports = {
   findUsers,
   deleteUser,
   userFollow,
-  existingFollow
+  existingFollow,
+  findFollowers,
+  userUnfollow,
+  findFollowing
 }
