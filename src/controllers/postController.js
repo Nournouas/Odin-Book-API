@@ -36,8 +36,12 @@ const getPosts = async (req, res) => {
 const deletePost = async (req, res) => {
   const post = await getPostByID(req.params.id);
   if (!post) return res.status(404).json("post does not exist");
-  await deletePostByID(req.params.id);
-  res.status(200).json("post deleted successfully")
+  if (post.authorId == req.user.id) {
+    await deletePostByID(req.params.id);
+    res.status(200).json("post deleted successfully")
+  }else{
+    res.status(401).json("unauthorised to edit this post")
+  }
 }
 
 

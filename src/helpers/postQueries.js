@@ -16,8 +16,21 @@ const getPostByID = async (id) => {
   const post = await prisma.post.findUnique({
     where: {id: parseInt(id)},
     include: {
-      author: true,
+      author: {
+        select: {name: true, id: true}
+      },
       comments: true,
+      likes: {
+        select: {
+          id: true,
+          liker: {
+            select: {
+              name: true,
+              id: true
+            }
+          },
+        },
+      },
     }
   })
   return post;
@@ -36,8 +49,33 @@ const updatePost = async (postID, title, body) => {
 const getAllPosts = async () => {
   const posts = await prisma.post.findMany({
     include: {
-      author: true,
-      comments: true,
+      author: {
+        select: {name: true, id: true}
+      },
+      comments: {
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          author: {
+            select: {
+              name: true,
+              id: true
+            }
+          },
+        },
+      },
+      likes: {
+        select: {
+          id: true,
+          liker: {
+            select: {
+              name: true,
+              id: true
+            }
+          },
+        },
+      },
     }
   })
   return posts;

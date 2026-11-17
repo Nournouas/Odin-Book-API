@@ -18,7 +18,7 @@ const signup = async (req, res) => {
 }
 
 const login = async (req, res) => {
-  if (req.body.email && req.body.name && req.body.password){
+  if (req.body.email && req.body.password){
     const exisitingUser = await findUserByEmail(req.body.email);
     if (exisitingUser){
       const passMatch = await bcrypt.compare(req.body.password, exisitingUser.password);
@@ -33,7 +33,10 @@ const login = async (req, res) => {
         {expiresIn: "2h"},
         (err, token) => {
           if (err) throw err;
-          res.status(200).json({token: token});
+          res.status(200).json({
+            token: token,
+            id: exisitingUser.id,
+          });
         });
     }else{
       return res.status(401).json("Wrong Password Or Email");

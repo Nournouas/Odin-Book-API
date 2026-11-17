@@ -1046,7 +1046,3 @@ describe.only("GET /user/:id/followings"  , () => {
     expect(resFollowing.body.following[0].posts).toBeDefined();
   });
 })
-
-/*
-
-  */

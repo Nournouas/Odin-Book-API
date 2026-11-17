@@ -1,5 +1,6 @@
 const { Prisma } = require("@prisma/client/extension");
-const { prisma } = require("../../lib/prisma")
+const { prisma } = require("../../lib/prisma");
+const { contain } = require("supertest/lib/cookies");
 
 // AUTH ROUTE
 const createUser = async (email, name, password) => {
@@ -48,12 +49,92 @@ const findUser = async (id) => {
       email: true,
     },
     include: {
-      posts: true,
+      posts: {
+        include: {
+          comments: {
+            include: {
+              author: {
+                omit: {
+                  password: true,
+                  email: true,
+                }
+              },
+            }
+          },
+          author: {
+            omit: {
+              password: true,
+              email: true,
+            }
+          },
+          likes: {
+            select: {
+              id: true,
+              liker: {
+                select: {
+                  name: true,
+                  id: true
+                }
+              },
+            },
+          },
+        }
+      },
       comments: true,
+      followed: true,
+      following: true,
     }
   })
-
   return user;
+}
+
+const findUserName = async (name) => {
+  const users = await prisma.user.findMany({
+    where: {name: {
+      contains: name,
+    }},
+    omit: {
+      password: true,
+      email: true,
+    },
+    include: {
+      posts: {
+        include: {
+          comments: {
+            include: {
+              author: {
+                omit: {
+                  password: true,
+                  email: true,
+                }
+              },
+            }
+          },
+          likes: {
+            select: {
+              id: true,
+              liker: {
+                select: {
+                  name: true,
+                  id: true
+                }
+              },
+            },
+          },
+          author: {
+                omit: {
+                  password: true,
+                  email: true,
+                }
+              },
+        }
+      },
+      comments: true,
+      followed: true,
+      following: true,
+    },
+  })
+  return users;
 }
 
 const findUsers = async() => {
@@ -117,7 +198,42 @@ const existingFollow = async (userID, otherID) => {
 const findFollowers = async (id) => {
   const followers = await prisma.user.findMany({
     where: {following: {some: {followedId: parseInt(id)}}},
-    select: {id: true, name: true, bio: true}
+    select: {
+      id: true, 
+      name: true, 
+      bio: true, 
+      posts: {
+        include: {
+          author: {
+            omit: {
+              password: true,
+              email: true,
+            }
+          },
+          likes: {
+            select: {
+              id: true,
+              liker: {
+                select: {
+                  name: true,
+                  id: true
+                }
+              },
+            },
+          },
+          comments: {
+            include: {
+              author: {
+                omit: {
+                  password: true,
+                  email: true
+                }
+              }
+            }
+          },
+        }
+      }
+    }
   })
   return followers;
 }
@@ -125,7 +241,42 @@ const findFollowers = async (id) => {
 const findFollowing = async (id) => {
   const following = await prisma.user.findMany({
     where: {followed: {some: {followingId: parseInt(id)}}},
-    select: {id: true, name: true, bio: true, posts: true}
+        select: {
+      id: true, 
+      name: true, 
+      bio: true, 
+      posts: {
+        include: {
+          author: {
+            omit: {
+              password: true,
+              email: true,
+            }
+          },
+          likes: {
+            select: {
+              id: true,
+              liker: {
+                select: {
+                  name: true,
+                  id: true
+                }
+              },
+            },
+          },
+          comments: {
+            include: {
+              author: {
+                omit: {
+                  password: true,
+                  email: true
+                }
+              }
+            }
+          },
+        }
+      }
+    }
   })
   return following;
 }
@@ -143,5 +294,6 @@ module.exports = {
   existingFollow,
   findFollowers,
   userUnfollow,
-  findFollowing
+  findFollowing,
+  findUserName
 }
